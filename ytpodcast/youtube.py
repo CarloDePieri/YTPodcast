@@ -23,6 +23,7 @@ class VideoData:
     title: str
     description: str
     thumbnail: str
+    url: str
 
 
 def get_video_data(video: YouTube) -> VideoData:
@@ -31,4 +32,5 @@ def get_video_data(video: YouTube) -> VideoData:
         title=video.title,
         description=video.description,
         thumbnail=video.thumbnail_url,
+        url=f"/api/stream/{video.video_id}",
     )
