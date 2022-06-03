@@ -1,6 +1,7 @@
+from dataclasses import dataclass
 from typing import Optional, List
 
-from pytube import Playlist
+from pytube import Playlist, YouTube
 
 
 def generate_video_list(entity: Playlist, limit: Optional[int] = None) -> List[str]:
@@ -14,3 +15,20 @@ def generate_video_list(entity: Playlist, limit: Optional[int] = None) -> List[s
         return videos
     else:
         return list(entity.video_urls)
+
+
+@dataclass
+class VideoData:
+    id: str
+    title: str
+    description: str
+    thumbnail: str
+
+
+def get_video_data(video: YouTube) -> VideoData:
+    return VideoData(
+        id=video.video_id,
+        title=video.title,
+        description=video.description,
+        thumbnail=video.thumbnail_url,
+    )
