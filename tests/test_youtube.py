@@ -3,7 +3,7 @@ from typing import List
 import pytest
 from pytube import Channel, Playlist, YouTube
 
-from ytpodcast.youtube import generate_video_list, get_video_data, VideoData
+from ytpodcast.youtube import generate_video_list, VideoData
 from tests.conftest import vcr_record
 
 
@@ -54,7 +54,7 @@ class TestAVideoData:
         """TestAVideoData setup"""
         with vcr_setup():
             video_url = "https://www.youtube.com/watch?v=BaW_jenozKc"
-            request.cls.video_data = get_video_data(YouTube(video_url))
+            request.cls.video_data = VideoData.from_video(YouTube(video_url))
 
     def test_should_contain_a_title(self):
         """A video data should contain a title."""

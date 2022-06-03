@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, List
 
@@ -25,12 +26,12 @@ class VideoData:
     thumbnail: str
     url: str
 
-
-def get_video_data(video: YouTube) -> VideoData:
-    return VideoData(
-        id=video.video_id,
-        title=video.title,
-        description=video.description,
-        thumbnail=video.thumbnail_url,
-        url=f"/api/stream/{video.video_id}",
-    )
+    @staticmethod
+    def from_video(video: YouTube) -> VideoData:
+        return VideoData(
+            id=video.video_id,
+            title=video.title,
+            description=video.description,
+            thumbnail=video.thumbnail_url,
+            url=f"/api/stream/{video.video_id}",
+        )
