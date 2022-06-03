@@ -25,6 +25,7 @@ class VideoData:
     description: str
     thumbnail: str
     url: str
+    length: int
 
     @staticmethod
     def from_video(video: YouTube) -> VideoData:
@@ -34,4 +35,5 @@ class VideoData:
             description=video.description,
             thumbnail=video.thumbnail_url,
             url=f"/api/stream/{video.video_id}",
+            length=video.length,
         )

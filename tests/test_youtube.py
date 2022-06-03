@@ -81,3 +81,7 @@ class TestAVideoData:
     def test_should_have_a_stream_url(self):
         """A video data should have a stream url."""
         assert self.video_data.url == f"/api/stream/{self.video_data.id}"
+
+    def test_should_have_the_video_length(self):
+        """A video data should have the video length."""
+        assert self.video_data.length == 10
