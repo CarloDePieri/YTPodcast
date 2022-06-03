@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 
 from pytube import Playlist, YouTube
+import youtube_dl
 
 
 def generate_video_list(entity: Playlist, limit: Optional[int] = None) -> List[str]:
@@ -37,3 +38,12 @@ class VideoData:
             url=f"/api/stream/{video.video_id}",
             length=video.length,
         )
+
+
+def get_stream_url(video_id: str) -> str:
+    ydl_opts = {
+        "format": "bestaudio",
+    }
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(video_id, download=False)
+    return info.get("url")

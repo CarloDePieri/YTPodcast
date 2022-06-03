@@ -1,9 +1,10 @@
 from typing import List
 
 import pytest
+import requests
 from pytube import Channel, Playlist, YouTube
 
-from ytpodcast.youtube import generate_video_list, VideoData
+from ytpodcast.youtube import generate_video_list, VideoData, get_stream_url
 from tests.conftest import vcr_record
 
 
@@ -44,6 +45,7 @@ class TestAGeneratedVideoList:
         assert len(video_list) == 6
 
 
+@vcr_record
 class TestAVideoData:
     """Test: A video data..."""
 
@@ -85,3 +87,14 @@ class TestAVideoData:
     def test_should_have_the_video_length(self):
         """A video data should have the video length."""
         assert self.video_data.length == 10
+
+
+@vcr_record
+class TestTheStreamUrl:
+    """Test: The stream url..."""
+
+    def test_should_be_obtainable_from_the_video_id(self):
+        """The stream url should be obtainable from the video id."""
+        stream = get_stream_url("BaW_jenozKc")
+        assert isinstance(stream, str)
+        assert len(stream) > 0
