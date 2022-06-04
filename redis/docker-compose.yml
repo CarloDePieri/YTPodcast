@@ -1,0 +1,10 @@
+---
+services:
+  redis:
+    image: redis:alpine
+    container_name: ytpodcast_redis
+    hostname: ytpodcast_redis
+    network_mode: host
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
