@@ -1,11 +1,25 @@
+import json
 import redis as _redis
 
-
 from tests.vcr_config import *
+from pytube import Channel, Playlist
 
 
-test_video_id = "BaW_jenozKc"
-test_video_data_bytes = b'{"id": "BaW_jenozKc", "title": "youtube-dl test video \\"\'/\\\\\\u00e4\\u21ad\\ud835\\udd50", "description": "test chars:  \\"\'/\\\\\\u00e4\\u21ad\\ud835\\udd50\\ntest URL: https://github.com/rg3/youtube-dl/issues/1892\\n\\nThis is a test video for youtube-dl.\\n\\nFor more information, contact phihag@phihag.de .", "thumbnail": "https://i.ytimg.com/vi/BaW_jenozKc/sddefault.jpg", "url": "/api/stream/BaW_jenozKc", "length": 10}'
+#
+# Cache some test data
+#
+with open("test_data.json", "r") as f:
+    test_data = json.load(f)
+
+test_video_id = test_data["video_id"]
+test_video_url = f"https://www.youtube.com/watch?v={test_video_id}"
+test_video_data = json.loads(test_data["video_data"])
+test_channel_url = test_data["channel_url"]
+test_playlist_url = test_data["playlist_url"]
+
+with my_vcr.use_cassette("cassettes/test_data.yaml"):
+    test_channel_video_list = list(Channel(test_channel_url).video_urls)
+    test_playlist_video_list = list(Playlist(test_playlist_url).video_urls)
 
 
 @pytest.fixture(scope="session")
@@ -15,7 +29,7 @@ def redis():
 
 
 @pytest.fixture(scope="function")
-def reset_cache_after_every_test(redis):
+def reset_video_cache_after_every_test(redis):
     """Ensure the test video cache is purged after every test."""
     yield
     redis.delete(test_video_id)

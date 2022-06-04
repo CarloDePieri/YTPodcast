@@ -1,0 +1,6 @@
+{
+  "video_id": "BaW_jenozKc",
+  "video_data": "{\"id\": \"BaW_jenozKc\", \"title\": \"youtube-dl test video \\\"'/\\\\\\u00e4\\u21ad\\ud835\\udd50\", \"description\": \"test chars:  \\\"'/\\\\\\u00e4\\u21ad\\ud835\\udd50\\ntest URL: https://github.com/rg3/youtube-dl/issues/1892\\n\\nThis is a test video for youtube-dl.\\n\\nFor more information, contact phihag@phihag.de .\", \"thumbnail\": \"https://i.ytimg.com/vi/BaW_jenozKc/sddefault.jpg\", \"url\": \"/api/stream/BaW_jenozKc\", \"length\": 10}",
+  "channel_url": "https://www.youtube.com/c/PhilippHagemeister",
+  "playlist_url": "https://www.youtube.com/playlist?list=PLzsAfrTnv2gok8tVkG25yhFyenRTcBnVM"
+}
