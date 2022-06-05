@@ -1,19 +1,18 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
 import shelve
 from redis import Redis
 
-if TYPE_CHECKING:
-    from ytpodcast.youtube import Video
+from ytpodcast.youtube import Video
 
 
 class Cache(ABC):
     """TODO"""
 
     @abstractmethod
-    def is_cached(self, video: Video) -> bool:
+    def is_cached(self, video_id: str) -> bool:
         pass
 
     @abstractmethod
@@ -33,8 +32,8 @@ class RedisCache(Cache):
     def __init__(self):
         self.r = Redis(host="localhost", port=6379, db=0)
 
-    def is_cached(self, video: Video) -> bool:
-        key = self._key_from_id(video.id)
+    def is_cached(self, video_id: str) -> bool:
+        key = self._key_from_id(video_id)
         return self.r.get(key) is not None
 
     def save(self, video: Video) -> None:
@@ -55,8 +54,8 @@ class ShelveCache(Cache):
     def __init__(self, db_file: str = "db"):
         self.db = shelve.open(db_file)
 
-    def is_cached(self, video: Video) -> bool:
-        return self.db.get(video.id) is not None
+    def is_cached(self, video_id: str) -> bool:
+        return self.db.get(video_id) is not None
 
     def save(self, video: Video) -> None:
         self.db[video.id] = video.to_json()

@@ -35,10 +35,10 @@ class TestARedisCache:
         self, redis, reset_video_cache_after_every_test
     ):
         """A redis cache should be able to tell if an object is cached."""
-        assert not self.cache.is_cached(self.video)
+        assert not self.cache.is_cached(self.video.id)
         key = self.cache._key_from_id(self.video.id)
         redis.set(key, "{}")
-        assert self.cache.is_cached(self.video)
+        assert self.cache.is_cached(self.video.id)
 
     def test_should_be_able_to_recover_an_object_from_the_cache(
         self, redis, reset_video_cache_after_every_test
@@ -81,12 +81,12 @@ class TestAShelveCache:
     def test_should_be_able_to_tell_if_an_object_is_cached(self):
         """A Shelve cache should be able to tell if an object is cached."""
         cache = ShelveCache(self.db)
-        assert not cache.is_cached(self.video)
+        assert not cache.is_cached(self.video.id)
         del cache  # This is needed to access the db, since it will close shelve connection with the db file
         with shelve.open(self.db) as db:
             db[td.video_id] = td.video_data_str
         cache = ShelveCache(self.db)
-        assert cache.is_cached(self.video)
+        assert cache.is_cached(self.video.id)
 
     def test_should_be_able_to_recover_an_object_from_the_cache(self):
         """A shelve cache should be able to recover an object from the cache."""
