@@ -1,15 +1,14 @@
 import dataclasses
 import json
+import uuid
 from typing import Union, Dict
 
 import redis as _redis
-
 from pytube import Channel, Playlist
+from vcr.errors import CannotOverwriteExistingCassetteException
 
 from ytpodcast.api import get_stream_url
 from tests.vcr_config import *
-
-import pytest
 
 
 @dataclasses.dataclass
@@ -77,3 +76,22 @@ def reset_video_cache_after_every_test(redis):
     """Ensure the test video cache is purged after every test."""
     yield
     redis.delete(f"ytpodcast:video:{test_data.video_id}")
+
+
+class NetworkCallMade(Exception):
+    """Exception called if a network call has been made in a no_network_calls block."""
+
+
+@contextmanager
+def _no_network_calls_ctx():
+    """Trick to ensure no network call is made in a block, using vcrpy."""
+    try:
+        with my_vcr.use_cassette(str(uuid.uuid4()), record_mode="none"):
+            yield
+    except CannotOverwriteExistingCassetteException as e:
+        raise NetworkCallMade(
+            f"Made a network call to {e.failed_request.url} when it was not supposed to!"
+        )
+
+
+forbidden_network_calls = _no_network_calls_ctx()

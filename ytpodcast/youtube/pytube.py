@@ -15,8 +15,14 @@ class PytubeInfo(YouTubeInfo):
     name = "pytube"
 
     def video_from_id(self, video_id: str) -> Video:
-        url = video_url_from_id(video_id)
-        return self._video_from_url(url)
+        if self.cache and self.cache.is_cached(video_id):
+            video = self.cache.load(video_id)
+        else:
+            url = video_url_from_id(video_id)
+            video = self._video_from_url(url)
+            if self.cache:
+                self.cache.save(video)
+        return video
 
     @staticmethod
     def _video_from_url(url: str) -> Video:

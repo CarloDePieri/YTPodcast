@@ -2,10 +2,11 @@ from typing import Type
 
 import pytest
 
+from ytpodcast.cache import RedisCache
 from ytpodcast.utils import video_url_from_id
 from ytpodcast.youtube import Video, Playlist, PytubeInfo
 from ytpodcast.youtube.base import YouTubeInfo
-from tests.conftest import vcr_record, test_data as td
+from tests.conftest import vcr_record, test_data as td, forbidden_network_calls
 
 
 @vcr_record
@@ -43,3 +44,29 @@ class TestAYouTubeInfoImplementation:
         assert len(playlist.videos) == limit
         for video in playlist.videos[:2]:
             assert video_url_from_id(video.id) in td.playlist_video_list
+
+    @pytest.mark.parametrize("cache_obj", [RedisCache()])
+    def test_can_write_to_a_cache(
+        self,
+        info_cls: Type[YouTubeInfo],
+        cache_obj: Type[RedisCache],
+        reset_video_cache_after_every_test,
+    ):
+        """A YouTubeInfo implementation can write to a Cache."""
+        info = info_cls(cache=cache_obj)
+        video = info.video_from_id(td.video_id)
+        assert cache_obj.is_cached(video.id)
+
+    @pytest.mark.parametrize("cache_obj", [RedisCache()])
+    def test_can_read_from_a_cache(
+        self,
+        info_cls: Type[YouTubeInfo],
+        cache_obj: Type[RedisCache],
+        reset_video_cache_after_every_test,
+    ):
+        """A YouTubeInfo implementation can read from a Cache."""
+        info = info_cls(cache=cache_obj)
+        video = info.video_from_id(td.video_id)
+        with forbidden_network_calls:
+            cached_video = info.video_from_id(td.video_id)
+        assert video.id == cached_video.id
