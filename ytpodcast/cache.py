@@ -31,11 +31,18 @@ class RedisCache(Cache):
         self.r = Redis(host="localhost", port=6379, db=0)
 
     def is_cached(self, video: Video) -> bool:
-        return self.r.get(video.id) is not None
+        key = self._key_from_id(video.id)
+        return self.r.get(key) is not None
 
     def save(self, video: Video) -> None:
-        self.r.set(video.id, video.to_json())
+        key = self._key_from_id(video.id)
+        self.r.set(key, video.to_json())
 
     def load(self, video_id: str) -> Optional[Video]:
-        data = self.r.get(video_id).decode("UTF-8")
+        key = self._key_from_id(video_id)
+        data = self.r.get(key).decode("UTF-8")
         return Video.from_json(data)
+
+    @staticmethod
+    def _key_from_id(video_id: str) -> str:
+        return f"ytpodcast:video:{video_id}"

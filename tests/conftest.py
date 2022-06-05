@@ -76,4 +76,4 @@ def redis():
 def reset_video_cache_after_every_test(redis):
     """Ensure the test video cache is purged after every test."""
     yield
-    redis.delete(test_data.video_id)
+    redis.delete(f"ytpodcast:video:{test_data.video_id}")

@@ -3,3 +3,4 @@
 **/__pycache__/*
 **/.pytest_cache
 /redis/data/
+/tests/cache_performance_results
