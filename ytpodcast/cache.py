@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+import shelve
 from redis import Redis
 
 from ytpodcast.youtube import Video
@@ -46,3 +47,23 @@ class RedisCache(Cache):
     @staticmethod
     def _key_from_id(video_id: str) -> str:
         return f"ytpodcast:video:{video_id}"
+
+
+class ShelveCache(Cache):
+    def __init__(self, db_file: str = "db"):
+        self.db = shelve.open(db_file)
+
+    def is_cached(self, video: Video) -> bool:
+        return self.db.get(video.id) is not None
+
+    def save(self, video: Video) -> None:
+        self.db[video.id] = video.to_json()
+
+    def load(self, video_id: str) -> Optional[Video]:
+        data_str = self.db[video_id]
+        return Video.from_json(data_str)
+
+    def __del__(self):
+        # NOTE: cache is persisted on disk only when the object is destroyed
+        # NOTE 2: writing to disk is costly, but it should not impact api answers; TODO verify this
+        self.db.close()
