@@ -1,10 +1,12 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import shelve
 from redis import Redis
 
-from ytpodcast.youtube import Video
+if TYPE_CHECKING:
+    from ytpodcast.youtube import Video
 
 
 class Cache(ABC):
