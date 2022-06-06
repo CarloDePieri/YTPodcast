@@ -1,13 +1,9 @@
-from datetime import datetime
-import os
-import time
 import shelve
-from typing import List, Union, Tuple
 
 import pytest
 
 from ytpodcast.youtube import Video
-from ytpodcast.cache import RedisCache, Cache, ShelveCache
+from ytpodcast.cache import RedisCache, ShelveCache
 from tests.conftest import test_data as td
 
 
@@ -90,65 +86,3 @@ class TestAShelveCache:
         cache = ShelveCache(self.db)
         video = cache.load(td.video_id)
         assert video.id == td.video_id
-
-
-# This is skipped by default, it's only used to measure cache performance
-@pytest.mark.skip
-class TestCachePerformance:
-    """Test: CachePerformance..."""
-
-    @pytest.fixture(scope="class", autouse=True)
-    def _setup(self, request):
-        """TestCachePerformance setup"""
-        videos = []
-        for video_url in td.channel_video_list:
-            video = Video.from_json(td.video_data_str)
-            video.id = video_url.replace("https://www.youtube.com/watch?v=", "")
-            videos.append(video)
-        request.cls.videos = videos
-        with open(f"{request.config.rootdir}/cache_performance_results", "a+") as f:
-            request.cls.report_file = f
-            f.write(f"---- {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ----\n")
-            yield
-
-    @pytest.fixture
-    def redis_performance_test(self, redis) -> Tuple[RedisCache, str]:
-        """Setup and Teardown for redis cache performance test."""
-        cache = RedisCache()
-        yield cache, "redis"
-        for video in self.videos:
-            redis.delete(cache._key_from_id(video.id))
-
-    @pytest.fixture
-    def shelve_performance_test(
-        self, test_shelve_cache_db_path
-    ) -> Tuple[ShelveCache, str]:
-        """Setup and Teardown for shelve cache performance test."""
-        cache = ShelveCache(db_file=test_shelve_cache_db_path)
-        yield cache, "shelve"
-        os.remove(test_shelve_cache_db_path)
-
-    @pytest.mark.parametrize(
-        "cache_fixture",
-        ["redis_performance_test", "shelve_performance_test"],
-        ids=["redis_cache", "shelve_cache"],
-    )
-    def test_should_be_acceptable(self, cache_fixture, fixture_from_param):
-        """Cache performance should be acceptable."""
-        # Enable the setup&teardown fixture: must be called here at the start, so it will always trigger on teardown
-        cache, name = fixture_from_param(cache_fixture)
-
-        start = time.time()
-        for video in self.videos:
-            cache.save(video)
-        end = time.time()
-        write_time = (end - start) / len(self.videos) * 1000000
-
-        start = time.time()
-        for video in self.videos:
-            _ = cache.load(video.id)
-        end = time.time()
-        read_time = (end - start) / len(self.videos) * 1000000
-
-        self.report_file.write(f"{name} write: {str(write_time)} μs\n")
-        self.report_file.write(f"{name} read: {str(read_time)} μs\n")
