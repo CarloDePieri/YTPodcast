@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import time
 import shelve
+from typing import List, Union, Tuple
 
 import pytest
 
@@ -22,9 +23,7 @@ class TestARedisCache:
         request.cls.cache = RedisCache()
         request.cls.video = Video.from_json(td.video_data_str)
 
-    def test_should_be_able_to_store_a_value(
-        self, redis, reset_video_cache_after_every_test
-    ):
+    def test_should_be_able_to_store_a_value(self, redis, reset_test_video_redis_cache):
         """A redis cache should be able to store a value."""
         key = self.cache._key_from_id(td.video_id)
         assert redis.get(key) is None
@@ -32,7 +31,7 @@ class TestARedisCache:
         assert redis.get(key).decode("UTF-8") == td.video_data_str
 
     def test_should_be_able_to_tell_if_an_object_is_cached(
-        self, redis, reset_video_cache_after_every_test
+        self, redis, reset_test_video_redis_cache
     ):
         """A redis cache should be able to tell if an object is cached."""
         assert not self.cache.is_cached(self.video.id)
@@ -41,7 +40,7 @@ class TestARedisCache:
         assert self.cache.is_cached(self.video.id)
 
     def test_should_be_able_to_recover_an_object_from_the_cache(
-        self, redis, reset_video_cache_after_every_test
+        self, redis, reset_test_video_redis_cache
     ):
         """A redis cache should be able to recover an object from the cache."""
         key = self.cache._key_from_id(self.video.id)
@@ -50,6 +49,7 @@ class TestARedisCache:
         assert video.id == td.video_id
 
 
+@pytest.mark.usefixtures("reset_test_video_shelve_cache")
 class TestAShelveCache:
     """Test: A Shelve Cache..."""
 
@@ -57,15 +57,10 @@ class TestAShelveCache:
     video: Video
 
     @pytest.fixture(scope="class", autouse=True)
-    def setup(self, request):
+    def setup(self, request, test_shelve_cache_db_path_cls):
         """TestAShelveCache setup"""
-        request.cls.db = f"{request.config.rootdir}/testdb"
+        request.cls.db = test_shelve_cache_db_path_cls
         request.cls.video = Video.from_json(td.video_data_str)
-
-    @pytest.fixture(scope="function", autouse=True)
-    def single_setup(self, request):
-        yield
-        os.remove(request.cls.db)
 
     def test_should_be_able_to_store_a_value(self):
         """A Shelve Cache should be able to store a value."""
@@ -116,7 +111,33 @@ class TestCachePerformance:
             f.write(f"---- {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ----\n")
             yield
 
-    def _report(self, cache: Cache, name: str) -> [float, float]:
+    @pytest.fixture
+    def redis_performance_test(self, redis) -> Tuple[RedisCache, str]:
+        """Setup and Teardown for redis cache performance test."""
+        cache = RedisCache()
+        yield cache, "redis"
+        for video in self.videos:
+            redis.delete(cache._key_from_id(video.id))
+
+    @pytest.fixture
+    def shelve_performance_test(
+        self, test_shelve_cache_db_path
+    ) -> Tuple[ShelveCache, str]:
+        """Setup and Teardown for shelve cache performance test."""
+        cache = ShelveCache(db_file=test_shelve_cache_db_path)
+        yield cache, "shelve"
+        os.remove(test_shelve_cache_db_path)
+
+    @pytest.mark.parametrize(
+        "cache_fixture",
+        ["redis_performance_test", "shelve_performance_test"],
+        ids=["redis_cache", "shelve_cache"],
+    )
+    def test_should_be_acceptable(self, cache_fixture, fixture_from_param):
+        """Cache performance should be acceptable."""
+        # Enable the setup&teardown fixture: must be called here at the start, so it will always trigger on teardown
+        cache, name = fixture_from_param(cache_fixture)
+
         start = time.time()
         for video in self.videos:
             cache.save(video)
@@ -131,17 +152,3 @@ class TestCachePerformance:
 
         self.report_file.write(f"{name} write: {str(write_time)} μs\n")
         self.report_file.write(f"{name} read: {str(read_time)} μs\n")
-
-    def test_should_be_reported_for_redis_cache(self, redis):
-        """Cache performance should be reported for RedisCache."""
-        self._report(RedisCache(), "redis")
-        # cleanup
-        for video in self.videos:
-            redis.delete(RedisCache._key_from_id(video.id))
-
-    def test_should_be_reported_for_shelve_cache(self, request):
-        """Cache performance should be reported for ShelveCache."""
-        db = f"{request.config.rootdir}/testdb"
-        self._report(ShelveCache(db), "shelve")
-        # cleanup
-        os.remove(db)

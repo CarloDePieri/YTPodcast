@@ -2,11 +2,11 @@ from typing import Type
 
 import pytest
 
-from ytpodcast.cache import RedisCache
+from ytpodcast.cache import Cache
 from ytpodcast.utils import video_url_from_id
 from ytpodcast.youtube import Video, Playlist, PytubeInfo
 from ytpodcast.youtube.base import YouTubeInfo
-from tests.conftest import vcr_record, test_data as td, forbidden_network_calls
+from tests.conftest import vcr_record, test_data as td, forbid_network_calls
 
 
 @vcr_record
@@ -45,28 +45,52 @@ class TestAYouTubeInfoImplementation:
         for video in playlist.videos[:2]:
             assert video_url_from_id(video.id) in td.playlist_video_list
 
-    @pytest.mark.parametrize("cache_obj", [RedisCache()])
+    @pytest.mark.parametrize(
+        "cache_obj_fixture_name,teardown_fixture_name",
+        [
+            ["test_shelve_cache", "reset_test_video_shelve_cache"],
+            ["test_redis_cache", "reset_test_video_redis_cache"],
+        ],
+        ids=["shelve_cache", "redis_cache"],
+    )
     def test_can_write_to_a_cache(
         self,
         info_cls: Type[YouTubeInfo],
-        cache_obj: Type[RedisCache],
-        reset_video_cache_after_every_test,
+        cache_obj_fixture_name,
+        teardown_fixture_name,
+        fixture_from_param,
     ):
         """A YouTubeInfo implementation can write to a Cache."""
-        info = info_cls(cache=cache_obj)
-        video = info.video_from_id(td.video_id)
-        assert cache_obj.is_cached(video.id)
+        # Enable the teardown fixture: must be called here at the start, so it will trigger on teardown even on error
+        fixture_from_param(teardown_fixture_name)
 
-    @pytest.mark.parametrize("cache_obj", [RedisCache()])
+        cache = fixture_from_param(cache_obj_fixture_name)  # type: Cache
+        info = info_cls(cache=cache)
+        video = info.video_from_id(td.video_id)
+        assert cache.is_cached(video.id)
+
+    @pytest.mark.parametrize(
+        "cache_obj_fixture_name,teardown_fixture_name",
+        [
+            ["test_shelve_cache", "reset_test_video_shelve_cache"],
+            ["test_redis_cache", "reset_test_video_redis_cache"],
+        ],
+        ids=["shelve_cache", "redis_cache"],
+    )
     def test_can_read_from_a_cache(
         self,
         info_cls: Type[YouTubeInfo],
-        cache_obj: Type[RedisCache],
-        reset_video_cache_after_every_test,
+        cache_obj_fixture_name,
+        teardown_fixture_name,
+        fixture_from_param,
     ):
         """A YouTubeInfo implementation can read from a Cache."""
-        info = info_cls(cache=cache_obj)
+        # Enable the teardown fixture: must be called here at the start, so it will trigger on teardown even on error
+        fixture_from_param(teardown_fixture_name)
+
+        cache = fixture_from_param(cache_obj_fixture_name)  # type: Cache
+        info = info_cls(cache=cache)
         video = info.video_from_id(td.video_id)
-        with forbidden_network_calls:
+        with forbid_network_calls():
             cached_video = info.video_from_id(td.video_id)
         assert video.id == cached_video.id
