@@ -3,12 +3,11 @@ import json
 import uuid
 from typing import Union, Dict
 
-import pytest
 import redis as _redis
 from pytube import Channel, Playlist
 from vcr.errors import CannotOverwriteExistingCassetteException
 
-from cache import RedisCache, ShelveCache
+from ytpodcast.cache import RedisCache, ShelveCache
 from ytpodcast.api import get_stream_url
 from tests.vcr_config import *
 
@@ -44,7 +43,8 @@ test_data = TestData()
 @pytest.fixture(scope="session", autouse=True)
 def prep_test_data(request):
     """Cache some test data."""
-    with open(f"{request.config.rootdir}/test_data.json", "r") as f:
+    test_root_dir = f"{request.config.rootdir}/tests"
+    with open(f"{test_root_dir}/test_data.json", "r") as f:
         data = json.load(f)
 
     test_data.video_id = data["video_id"]
@@ -60,7 +60,7 @@ def prep_test_data(request):
     test_data.playlist_id = data["playlist_id"]
     test_data.playlist_url = data["playlist_url"]
 
-    with my_vcr.use_cassette("cassettes/test_data.yaml"):
+    with my_vcr.use_cassette(f"{test_root_dir}/cassettes/test_data.yaml"):
         test_data.channel_video_list = list(Channel(test_data.channel_url).video_urls)
         test_data.playlist_video_list = list(
             Playlist(test_data.playlist_url).video_urls
@@ -97,7 +97,7 @@ def reset_test_video_redis_cache(redis):
 
 
 def _test_shelve_cache_db_path(request):
-    return f"{request.config.rootdir}/testdb"
+    return f"{request.config.rootdir}/tests/testdb"
 
 
 @pytest.fixture(scope="function")
